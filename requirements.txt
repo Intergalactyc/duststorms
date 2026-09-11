@@ -1,0 +1,5 @@
+ttu-tower-processing @ git+https://github.com/Intergalactyc/ttu-tower-processing@main
+pandas
+numpy
+matplotlib
+ipykernel
