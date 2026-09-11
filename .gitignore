@@ -18,6 +18,7 @@ venv*/
 !*_TEMPLATE.ini
 
 results/
+plots/
 
 .pytest_cache
 
