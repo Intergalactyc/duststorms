@@ -58,6 +58,23 @@ def plot_stability_shear(df, date_label):
     return fig
 
 
+def plot_solar_precip(df, date_label):
+    fig, ax = plt.subplots(figsize=(16, 10))
+    solar = df.dropna(subset=["solar"])
+    ax.plot(solar["timestamp"], solar["solar"], color="tab:orange", label="Solar Radiation")
+    ax.set_ylabel("Solar Radiation (W/m²)")
+    ax2 = ax.twinx()
+    precip = df.dropna(subset=["precip"])
+    ax2.bar(precip["timestamp"], precip["precip"], width=1 / 288, color="tab:blue", label="Precipitation")
+    ax2.set_ylabel("Precipitation (in)")
+    ax.xaxis.set_major_formatter(DATEFORMATTER)
+    handles1, labels1 = ax.get_legend_handles_labels()
+    handles2, labels2 = ax2.get_legend_handles_labels()
+    ax.legend(handles1 + handles2, labels1 + labels2, loc="upper right")
+    fig.suptitle(f"{date_label}\nSolar radiation and precipitation")
+    return fig
+
+
 def plot_wind_speeds(df, date_label):
     fig, ax = plt.subplots(figsize=(16, 10))
     for b, h in d.ALL_HEIGHTS_DICT.items():
@@ -116,6 +133,7 @@ def plot_length_scale_w(df, date_label):
 PLOTS = {
     "temperature_pressure": plot_temperature_pressure,
     "stability_shear": plot_stability_shear,
+    "solar_precip": plot_solar_precip,
     "wind_speeds": plot_wind_speeds,
     "turbulence_intensity": plot_turbulence_intensity,
     "length_scale_u": plot_length_scale_u,
