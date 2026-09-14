@@ -61,7 +61,7 @@ def plot_stability_shear(df, date_label):
 def plot_solar_precip(df, date_label):
     fig, ax = plt.subplots(figsize=(16, 10))
     solar = df.dropna(subset=["solar"])
-    ax.plot(solar["timestamp"], solar["solar"], color="tab:orange", label="Solar Radiation")
+    plot_smoothed(ax, solar["timestamp"], solar["solar"], window=5, method="mean", color="tab:orange", label="Solar Radiation")
     ax.set_ylabel("Solar Radiation (W/m²)")
     ax2 = ax.twinx()
     precip = df.dropna(subset=["precip"])
