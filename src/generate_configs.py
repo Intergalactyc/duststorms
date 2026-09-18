@@ -1,6 +1,7 @@
 import json
 import pathlib
 import configparser
+from datetime import datetime, timedelta
 
 TEMPLATE = pathlib.Path(__file__).parent.parent / "configs" / "templates" / "duststorm_TEMPLATE.ini"
 CONFIGS_DIR = TEMPLATE.parent.parent
@@ -9,14 +10,26 @@ SOURCE_DIRECTORY = pathlib.Path("C:\\Users\\ellwalke\\Data\\Dust_Storms_TTU_200m
 
 DATE_DIRECTORY_MAP = {
     "14Dec2012" : "2012_12_14",
+    "19Dec2012" : "2012_12_19", # 47/48
     # "23Mar2013" : "2013_03_23",
     "16Nov2013" : "2013_11_16",
     "28Feb2014" : "2014_02_28",
     "11Mar2014" : "2014_03_11",
     "18Mar2014" : "2014_03_18",
-    "19Dec2012" : "2012_12_19", # 47/48
     "27Apr2014" : "2014_04_27-29" # 137/148
 }
+
+# Multi-day exception; every other identifier is a single calendar day
+DATE_RANGE_DAYS = {
+    "27Apr2014": 3,
+}
+
+# naive local time, fixed CST/Etc-GMT+6 offset (no DST) matching ttu_tower.definitions.SOURCE_TIMEZONE
+def _date_range(identifier: str) -> tuple[datetime, datetime]:
+    start = datetime.strptime(identifier, "%d%b%Y")
+    return start, start + timedelta(days=DATE_RANGE_DAYS.get(identifier, 1))
+
+DATE_RANGES = {name: _date_range(name) for name in DATE_DIRECTORY_MAP}
 
 def main():
     CONFIGS_DIR.mkdir(parents=True, exist_ok=True)

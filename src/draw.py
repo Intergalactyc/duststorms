@@ -15,6 +15,9 @@ PLOTS_DIR = pathlib.Path(__file__).resolve().parent.parent / "plots"
 
 DATEFORMATTER = mdates.DateFormatter("%H:%M", tz="US/Central")
 
+WINDOW = 5
+LSWINDOW = 15
+
 
 def _date_label(identifier):
     date = datetime.strptime(identifier[2:], "%d%b%Y")
@@ -41,7 +44,7 @@ def plot_temperature_pressure(df, date_label):
 
 def plot_stability_shear(df, date_label):
     fig, ax = plt.subplots(figsize=(16, 10))
-    plot_smoothed(ax, df["timestamp"], df["Rib_2-4"], window=10, method="median", label=r"Ri$_b$", color="tab:blue")
+    plot_smoothed(ax, df["timestamp"], df["Rib_2-4"], window=WINDOW, method="median", label=r"Ri$_b$", color="tab:blue")
     ax.set_ylim(-0.25, 0.25)
     ax.set_ylabel(r"Ri$_b$")
     ax.plot([df["timestamp"].min(), df["timestamp"].max()], [0, 0], label=r"Ri$_b=0$", color="gray", linestyle="dashed")
@@ -61,7 +64,7 @@ def plot_stability_shear(df, date_label):
 def plot_solar_precip(df, date_label):
     fig, ax = plt.subplots(figsize=(16, 10))
     solar = df.dropna(subset=["solar"])
-    plot_smoothed(ax, solar["timestamp"], solar["solar"], window=5, method="mean", color="tab:orange", label="Solar Radiation")
+    plot_smoothed(ax, solar["timestamp"], solar["solar"], window=WINDOW, method="median", color="tab:orange", label="Solar Radiation")
     ax.set_ylabel("Solar Radiation (W/m²)")
     ax2 = ax.twinx()
     precip = df.dropna(subset=["precip"])
@@ -75,12 +78,38 @@ def plot_solar_precip(df, date_label):
     return fig
 
 
+def plot_temperatures(df, date_label):
+    fig, ax = plt.subplots(figsize=(16,10))
+    for b, h in d.ALL_HEIGHTS_DICT.items():
+        plot_smoothed(ax, df["timestamp"], df[f"t_{b}_mean"], window=WINDOW, method="median", label=f"{h} m")
+    ax.legend()
+    ax.xaxis.set_major_formatter(DATEFORMATTER)
+    ax.set_ylabel("K")
+    fig.suptitle(f"{date_label}\nTemperatures")
+    return fig
+
+
+GRAD_PAIRS = [(2,4), (4,7), (7, 10)]
+def plot_temperatures_gradients(df, date_label):
+    fig, ax = plt.subplots(figsize=(16,10))
+    for b1, b2 in GRAD_PAIRS:
+        h1 = d.ALL_HEIGHTS_DICT[b1]
+        h2 = d.ALL_HEIGHTS_DICT[b2]
+        plot_smoothed(ax, df["timestamp"], (df[f"vpt_{b2}_mean"]-df[f"vpt_{b1}_mean"])/(h2-h1), window=WINDOW, method="median", label=f"{b2}-{b1} ({h2} m - {h1} m)")
+    ax.legend()
+    ax.xaxis.set_major_formatter(DATEFORMATTER)
+    ax.set_ylabel("K/m")
+    fig.suptitle(f"{date_label}\n" + r"Virtual Potential Temperature Gradients $\Delta\theta_v/\Delta z$")
+    return fig
+
+
 def plot_wind_speeds(df, date_label):
     fig, ax = plt.subplots(figsize=(16, 10))
     for b, h in d.ALL_HEIGHTS_DICT.items():
-        plot_smoothed(ax, df["timestamp"], df[f"ws_{b}_mean"], window=15, method="mean", label=f"{h} m")
+        plot_smoothed(ax, df["timestamp"], df[f"ws_{b}_mean"], window=WINDOW, method="median", label=f"{h} m")
     ax.legend()
     ax.xaxis.set_major_formatter(DATEFORMATTER)
+    ax.set_ylabel("m/s")
     fig.suptitle(f"{date_label}\nWind speeds")
     return fig
 
@@ -88,7 +117,7 @@ def plot_wind_speeds(df, date_label):
 def plot_turbulence_intensity(df, date_label):
     fig, ax = plt.subplots(figsize=(16, 10))
     for b, h in d.ALL_HEIGHTS_DICT.items():
-        plot_smoothed(ax, df["timestamp"], df[f"ti_{b}"], window=15, method="mean", label=f"{h} m")
+        plot_smoothed(ax, df["timestamp"], df[f"ti_{b}"], window=WINDOW, method="median", label=f"{h} m")
     ax.legend()
     ax.xaxis.set_major_formatter(DATEFORMATTER)
     fig.suptitle(f"{date_label}\nTurbulence intensities")
@@ -98,7 +127,7 @@ def plot_turbulence_intensity(df, date_label):
 def plot_length_scale_u(df, date_label):
     fig, ax = plt.subplots(figsize=(16, 10))
     for b, h in d.ALL_HEIGHTS_DICT.items():
-        plot_smoothed(ax, df["timestamp"], df[f"ILS-efolding_u_{b}"] / d.ALL_HEIGHTS_DICT[b], window=60, method="median", label=f"{h} m")
+        plot_smoothed(ax, df["timestamp"], df[f"ILS-efolding_u_{b}"] / d.ALL_HEIGHTS_DICT[b], window=LSWINDOW, method="median", label=f"{h} m")
     ax.legend()
     ax.set_yscale("log")
     ax.set_ylabel(r"$L_u/Z$")
@@ -110,7 +139,7 @@ def plot_length_scale_u(df, date_label):
 def plot_length_scale_v(df, date_label):
     fig, ax = plt.subplots(figsize=(16, 10))
     for b, h in d.ALL_HEIGHTS_DICT.items():
-        plot_smoothed(ax, df["timestamp"], df[f"ILS-efolding_v_{b}"] / d.ALL_HEIGHTS_DICT[b], window=60, method="median", label=f"{h} m")
+        plot_smoothed(ax, df["timestamp"], df[f"ILS-efolding_v_{b}"] / d.ALL_HEIGHTS_DICT[b], window=LSWINDOW, method="median", label=f"{h} m")
     ax.legend()
     ax.set_yscale("log")
     ax.set_ylabel(r"$L_v/Z$")
@@ -122,11 +151,31 @@ def plot_length_scale_v(df, date_label):
 def plot_length_scale_w(df, date_label):
     fig, ax = plt.subplots(figsize=(16, 10))
     for b, h in d.ALL_HEIGHTS_DICT.items():
-        plot_smoothed(ax, df["timestamp"], df[f"ILS-efolding_w_{b}"] / d.ALL_HEIGHTS_DICT[b], window=60, method="median", label=f"{h} m")
+        plot_smoothed(ax, df["timestamp"], df[f"ILS-efolding_w_{b}"] / d.ALL_HEIGHTS_DICT[b], window=LSWINDOW, method="median", label=f"{h} m")
     ax.legend()
     ax.set_ylabel(r"$L_w/Z$")
     ax.xaxis.set_major_formatter(DATEFORMATTER)
     fig.suptitle(f"{date_label}\nW length scales")
+    return fig
+
+
+def plot_solar_dust(df, date_label):
+    fig, ax = plt.subplots(figsize=(16, 10))
+    solar = df.dropna(subset=["solar"])
+    plot_smoothed(ax, solar["timestamp"], solar["solar"], window=WINDOW, method="median", color="tab:orange", label="Solar Radiation")
+    ax.set_ylabel("Solar Radiation (W/m²)")
+    ax2 = ax.twinx()
+    dust = df.dropna(subset=["pm25"])
+    ax2.plot(dust["timestamp"], dust["pm25"], color="tab:brown", label=r"PM$_{2.5}$")
+    ax2.set_ylabel(r"PM$_{2.5}$ (µg/m³)")
+    ax.xaxis.set_major_formatter(DATEFORMATTER)
+    handles1, labels1 = ax.get_legend_handles_labels()
+    handles2, labels2 = ax2.get_legend_handles_labels()
+    ax.legend(handles1 + handles2, labels1 + labels2, loc="upper right")
+    title = f"{date_label}\n" + r"Solar radiation and PM$_{2.5}$ particle concentration"
+    if len(dust) == 0:
+        title += "\nNO DUST MEASUREMENT AVAILABLE"
+    fig.suptitle(title)
     return fig
 
 
@@ -139,11 +188,15 @@ PLOTS = {
     "length_scale_u": plot_length_scale_u,
     "length_scale_v": plot_length_scale_v,
     "length_scale_w": plot_length_scale_w,
+    "temperatures" : plot_temperatures,
+    "temperature_gradients" : plot_temperatures_gradients,
+    "solar_dust" : plot_solar_dust,
 }
 
 
 def draw_all(identifier):
     df = loader.load(identifier)
+    df = loader.combine_pm25(df, identifier)
     date_label = _date_label(identifier)
     out_dir = PLOTS_DIR / identifier
     out_dir.mkdir(parents=True, exist_ok=True)

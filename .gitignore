@@ -19,6 +19,8 @@ venv*/
 
 results/
 plots/
+data/tceq_cache/
+data/tceq_pm25/
 
 .pytest_cache
 
